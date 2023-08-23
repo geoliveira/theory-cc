@@ -1,6 +1,3 @@
-#ifndef MODEL_H
-#define MODEL_H
-
 #include <stdio.h>
 #include <iostream>
 
@@ -28,6 +25,10 @@ class Variable {
             int res = (op > 0) ? op : 0;
             return Variable(res);
         }
+        void operator = (int n) {
+            int res = (n > 0) ? n : 0;
+            value = res;
+        }
         bool operator < (int n) {
             return value < n;
         }
@@ -45,14 +46,15 @@ class Variable {
         }
         // Operator overloading with a Variable argument
         Variable operator+(Variable var) {
-            int op = value + var.value;
-            int res = (op > 0) ? op : 0;
-            return Variable(res);
+            return Variable(value + var.value);
         }
         Variable operator-(Variable var) {
             int op = value - var.value;
             int res = (op > 0) ? op : 0;
             return Variable(res);
+        }
+        Variable operator * (Variable var) {
+            return Variable(value * var.value);
         }
 
         // Debug printing
@@ -61,22 +63,30 @@ class Variable {
         }
 };
 
-// using Instruction = Variable;
+int main(void) {
+    Variable x1, x2, x3, x4;
+    x1.print(); // implementação para prósitos de debug
 
-// class Label {
-//     public:
-//         Instruction instruction;
+    // Macros
+    // – GOTO L
+    // tomando vantagem da linguagem C++, podemos utilizar label e o comando "goto <label>". Ex:
+    // – V ← 0
+built_in_label:
+    x1 = 1; // implementação na linha 30
+    x1.print();
+    if (x1 != 1) { // implementação na linha 46
+        goto built_in_label;
+    }
+    // – V ← V’
+    // vantagem da própria linguagem
+    // – V ← V’+V”
+    x2 = x1;
+    x3 = x2 + x1; // implementação na linha 50
+    x3.print();
+    // – V ← V’∗V”
+    x2 = x2 + 1; // implementação na linha 18
+    x4 = x3 * x2; // implementação na linha 58
+    x4.print();
 
-//     public:
-//         // Initializing a label with a instruction
-//         Label(Instruction i) {
-//             instruction = i;
-//         }
-
-//         // Debug printing
-//         void print() {
-//             cout << "Label is " << instruction.value << endl;
-//         }
-// };
-
-#endif
+    return 0;
+}

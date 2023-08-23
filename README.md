@@ -11,8 +11,3 @@ make run
 Para limpar todos os arquivos:
 ```
 make clean
-```
-Para excluir os arquivos .ppm na pasta img/
-```
-make rmppm
-```
