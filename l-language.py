@@ -30,6 +30,7 @@ token_specification = {
 pattern = '|'.join('(?P<%s>%s)' % pair for pair in token_specification.items())
 
 def set_input_variable(variable: str) -> int:
+	return 1
 	return int(
 		input(
 			"Digite o valor de entrada da variável " + variable + ": "
@@ -61,31 +62,27 @@ class Interpreter:
 				group = mo.lastgroup
 				match group:
 					case 'label':
-						self.compile_label(token, idx)
+						label = token[1:-1] # adiciona somente o nome, i.e sem os colchetes
+						if label not in self.labels:
+							self.labels[label] = idx
 					case 'variable':
-						self.compile_il_variable(token)
+						if token not in self.variables:
+							self.variables[token] = 0 if token[0] == "Z" else set_input_variable(token)
 					case _:
 						if group in token_specification.keys():
 							continue
 						raise RuntimeError(f"Token está fora do padrão: '{token}'")
 
-	def compile_il_variable(self, variable: str):
-		if variable not in self.variables:
-			self.variables[variable] = 0 if variable[0] == "Z" else set_input_variable(variable)
-
-	def compile_label(self, token: str, idx_line: int):
-		label = token[1:-1] # adiciona somente o nome, i.e sem os colchetes
-		if label not in self.labels:
-			self.labels[label] = idx_line
-
 	def execute_instruction(self, line):
+		regex = re.compile(pattern)
 		tokens = line.split()
 		if not tokens:
 			self.current_line += 1
 			return
-		if tokens and tokens[0].startswith("[") and tokens[0].endswith("]"):
+		mo = regex.fullmatch(tokens[0])
+		if mo.lastgroup == 'label':
 			tokens.pop(0)
-		# IF V * 0 GOTO L
+		# IF V <> 0 GOTO L
 		#  If the value of V is nonzero, perform the instruction with label L next;
 		#   otherwise proceed to the next instruction in the list.
 		if (
@@ -93,14 +90,12 @@ class Interpreter:
 			and tokens[2:5] == ["<>", "0", "GOTO"]
 			and len(tokens) == 6
 		):
-			labelregex = re.search(r"^(A|B|C|D|E|[A|B|C|D|E][1-9][0-9]*)$", tokens[5])
-			if not labelregex:
-				print("Label " + tokens[5] + " fora do padrão!")
 			variable = tokens[1]
+			label = tokens[5]
 			value = self.get_variable_value(variable)
 			if value != 0:
 				if tokens[5] in self.labels:
-					self.current_line = self.labels[tokens[5]]
+					self.current_line = self.labels[label]
 				else:
 					self.current_line = -1
 			else:
@@ -116,26 +111,22 @@ class Interpreter:
 			# V <- V + 1
 			#  Increase by I the value of the variable V. 
 			if operator == "+":
-				current_value = self.get_variable_value(variable)
-				self.set_variable(variable, current_value + 1)
+				self.set_variable(variable, self.get_variable_value(variable) + 1)
 			# V <- V - 1
 			#  If the value of V is 0, leave it unchanged;
 			#   otherwise decrease by I the value of V
 			elif operator == "-":
-				current_value = self.get_variable_value(variable)
-				if current_value > 0:
-					self.set_variable(variable, current_value - 1)
+				self.set_variable(variable, self.get_variable_value(variable) - 1)
 			else:
 				print("Erro de sintaxe na linha " + self.current_line)
 			self.current_line += 1
+		else: print("Erro de sintaxe na linha " + self.current_line)
 
-	def get_variable_value(self, variable):
-		if variable in self.variables:
-			return self.variables[variable]
-		return 0
+	def get_variable_value(self, variable: str) -> int:
+		return self.variables[variable] if variable in self.variables else 0
 
-	def set_variable(self, variable, value):
-		self.variables[variable] = value
+	def set_variable(self, variable: str, value: int):
+		self.variables[variable] = value if value > 0 else 0
 
 
 '''
